@@ -4,6 +4,7 @@ import { getNodeAccessibilityData } from "./getNodeAccessibilityData/index";
 import { getNodeByIdRef } from "./getNodeByIdRef";
 import { isDialogRole } from "./isDialogRole";
 import { isElement } from "./isElement";
+import { isFeedRole } from "./isFeedRole";
 import { isHiddenFromAccessibilityTree } from "./isHiddenFromAccessibilityTree";
 
 export interface AccessibilityNode {
@@ -19,7 +20,9 @@ export interface AccessibilityNode {
   node: Node;
   parentAccessibilityNodeTree: AccessibilityNodeTree | null;
   parent: Node | null;
+  parentArticle: HTMLElement | null;
   parentDialog: HTMLElement | null;
+  parentFeed: HTMLElement | null;
   role: string;
   spokenRole: string;
 }
@@ -160,6 +163,26 @@ function growTree(
     tree.parentDialog = parentDialog;
   }
 
+  const parentFeed =
+    isFeedRole(tree.role) && isElement(tree.node)
+      ? (tree.node as HTMLElement)
+      : tree.parentFeed;
+
+  let parentArticle: HTMLElement | null = null;
+
+  if (parentFeed) {
+    tree.parentFeed = parentFeed;
+
+    parentArticle =
+      tree.role === "article" && isElement(tree.node)
+        ? (tree.node as HTMLElement)
+        : tree.parentArticle;
+
+    if (parentArticle) {
+      tree.parentArticle = parentArticle;
+    }
+  }
+
   node.childNodes.forEach((childNode) => {
     if (isHiddenFromAccessibilityTree(childNode)) {
       return;
@@ -207,7 +230,9 @@ function growTree(
         node: childNode,
         parentAccessibilityNodeTree: null, // Added during flattening
         parent: node,
+        parentArticle,
         parentDialog,
+        parentFeed,
         role,
         spokenRole,
       },
@@ -276,7 +301,9 @@ function growTree(
         node: childNode,
         parentAccessibilityNodeTree: null, // Added during flattening
         parent: node,
+        parentArticle,
         parentDialog,
+        parentFeed,
         role,
         spokenRole,
       },
@@ -334,7 +361,9 @@ export function createAccessibilityTree(
       node,
       parentAccessibilityNodeTree: null,
       parent: null,
+      parentArticle: null,
       parentDialog: null,
+      parentFeed: null,
       role,
       spokenRole,
     },
