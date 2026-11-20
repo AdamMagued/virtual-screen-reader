@@ -297,62 +297,18 @@ function getLiveRegionAttributes(
 
 export function getLiveSpokenPhrase({
   container,
-  mutation,
-  mutations,
+  mutation: { addedNodes, removedNodes, target, type },
 }: {
   container: Node | null;
   mutation: MutationRecord;
-  mutations: MutationRecord[];
 }): string {
-  const { addedNodes, attributeName, removedNodes, target, type } = mutation;
   const targetElement = getElementFromNode(target);
   const { atomic, busy, live, liveTarget, relevant } = getLiveRegionAttributes({
     container,
     target: targetElement,
   });
 
-  if (live === LIVE.OFF || !liveTarget) {
-    return "";
-  }
-
-  if (type === "attributes" && attributeName === "aria-busy") {
-    const isLastAriaBusyMutationForTarget =
-      mutations
-        .filter(
-          (m) =>
-            m.type === "attributes" &&
-            m.attributeName === "aria-busy" &&
-            isElement(m.target) &&
-            liveTarget.contains(m.target)
-        )
-        .at(-1) === mutation;
-
-    if (!isLastAriaBusyMutationForTarget) {
-      return "";
-    }
-
-    if (liveTarget.getAttribute("aria-busy") === "true") {
-      return "";
-    }
-
-    const liveContent = getSpokenPhraseForNode(liveTarget);
-
-    if (!liveContent) {
-      return "";
-    }
-
-    return `${live}: ${liveContent}`;
-  }
-
-  const hasAriaBusyChangeInBatch = mutations.some(
-    (m) =>
-      m.type === "attributes" &&
-      m.attributeName === "aria-busy" &&
-      isElement(m.target) &&
-      liveTarget.contains(m.target)
-  );
-
-  if (hasAriaBusyChangeInBatch || busy) {
+  if (live === LIVE.OFF || !liveTarget || busy) {
     return "";
   }
 

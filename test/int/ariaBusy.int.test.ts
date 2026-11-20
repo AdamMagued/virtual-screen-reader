@@ -169,7 +169,7 @@ describe("Aria Busy State", () => {
   describe("live regions with aria-busy", () => {
     it("should suppress intermediate updates when aria-busy is set to true on a polite live region and announce atomic update when busy ends", async () => {
       document.body.innerHTML = `
-      <div id="live" aria-live="polite">Initial content</div>
+      <div id="live" aria-live="polite" aria-atomic="true">Initial content</div>
       `;
 
       await virtual.start({ container: document.body });
@@ -205,7 +205,7 @@ describe("Aria Busy State", () => {
 
     it("should suppress intermediate updates when aria-busy is set to true on an assertive live region and announce atomic update when busy ends", async () => {
       document.body.innerHTML = `
-      <div id="live" aria-live="assertive">Initial alert</div>
+      <div id="live" aria-live="assertive" aria-atomic="true">Initial alert</div>
       `;
 
       await virtual.start({ container: document.body });
@@ -261,7 +261,7 @@ describe("Aria Busy State", () => {
 
     it("should suppress mutations in descendants when an ancestor is marked aria-busy", async () => {
       document.body.innerHTML = `
-      <div id="live" aria-live="polite" aria-busy="true">
+      <div id="live" aria-live="polite" aria-atomic="true" aria-busy="true">
         <ul id="list">
           <li>Item 1</li>
         </ul>
@@ -289,7 +289,7 @@ describe("Aria Busy State", () => {
       await virtual.stop();
     });
 
-    it("should only announce the last aria-busy change when multiple mutations occur in the same batch", async () => {
+    it("should not announce when aria-busy changes without content modifications in a non-atomic live region", async () => {
       document.body.innerHTML = `
       <div id="live" aria-live="polite">Initial content</div>
       `;
@@ -300,14 +300,9 @@ describe("Aria Busy State", () => {
       live.setAttribute("aria-busy", "true");
       live.setAttribute("aria-busy", "false");
 
-      await waitFor(async () => {
-        expect(await virtual.lastSpokenPhrase()).toBe("polite: Initial content");
-      });
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-      expect(await virtual.spokenPhraseLog()).toEqual([
-        "document",
-        "polite: Initial content",
-      ]);
+      expect(await virtual.spokenPhraseLog()).toEqual(["document"]);
 
       await virtual.stop();
     });
